@@ -1,0 +1,30 @@
+#!/bin/sh
+#PBS -q pg9
+#PBS -l select=8:ncpus=48:mpiprocs=4:ompthreads=1:ngpus=4
+#PBS -l walltime=1:00:00
+#PBS -o /home/g4/f210024/vaspmd/c128-test/VASP.out
+#PBS -N c128-test
+#PBS -j oe
+
+cd /home/g4/f210024/vaspmd/c128-test
+
+. /etc/profile.d/modules.sh
+
+source /home/app/mpi/modulefiles/newModules.sh
+module purge
+module load pgi/20.9 cuda/11.0 openmpi-gdr/4.1.0 fftw/3.3.8
+
+
+export LD_LIBRARY_PATH=/home/app/fftw/3.3.8/lib:$LD_LIBRARY_PATH
+export CPATH=/home/app/mpi/cuda11.0/openmpi/4.1.0/lib/pgi:$CPATH
+
+export MCA3=" --bind-to socket --map-by ppr:2:socket -x UCX_MEMTYPE_CACHE=no "
+export MCA4=" --mca pml ucx -x UCX_TLS=rc,dc,rdmacm,sockcm,cuda_copy,gdr_copy,cuda_ipc,self -x UCX_NET_DEVICES=mlx5_0:1,mlx5_1:1,mlx5_2:1,mlx5_3:1 -x UCX_MAX_EAGER_RAILS=4 -x UCX_MAX_RNDV_RAILS=4"
+
+export NO_STOP_MESSAGE=true
+NNODE=`wc -l $PBS_NODEFILE | awk '{print $1}'`
+
+ export OMP_NUM_THREADS=1
+
+
+mpirun -np 32 /home/g4/f210024/vaspbin/vasp_std.gpu 
